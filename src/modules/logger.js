@@ -17,7 +17,18 @@
             sendLog(msg,"WARN");
         }
     };
-
+    var emptyLogger = {
+        error : function(msg){
+        },
+        debug : function(msg){
+        },
+        log : function(msg){
+        },
+        info : function(msg){
+        },
+        warn : function(msg){
+        }
+    };
     var methods = [
         'assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error',
         'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log',
@@ -25,8 +36,8 @@
         'timeStamp', 'trace', 'warn'
     ];
     var length = methods.length;
-    var console = (window.console = window.console || customLogger);
-    if(HbbTV.Config.logToServiceOnly)window.console =  customLogger;
+    var console = (window.console = window.console || emptyLogger);
+    if(HbbTV.Config.logToService)window.console =  customLogger;
 
     while (length--) {
         method = methods[length];

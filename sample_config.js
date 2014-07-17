@@ -16,10 +16,10 @@
          */
         id : 0,
         /*
-         *  Set this to true, if you only want to log to Service
+         *  Set this to true, if you want to log to Service
          *
          */
-        logToServiceOnly : true,
+        logToService : true,
         /*
          * override animation settings to false if needed, otherwise true will use benchmarks
          */
