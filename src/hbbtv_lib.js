@@ -14,9 +14,19 @@ if (!window.HbbTV.Main) {
                 //console.log(e);
             }
             //init keys
+            _ref.setKeys(true);
+            _ref.userAgent = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion + ", " + navigator.userAgent) : "";
+            _ref.userAgentLog = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion) : ""
+            console.log('HbbTV::UA:' + _ref.userAgentLog);
+			// key listener
+            //console.log("HbbTV::Register Global KeyHandler");
+            if(keyCallback)HbbTV.KeyHandler.keyCallBack = keyCallback;
+            document.addEventListener("keydown", HbbTV.KeyHandler.handleKeyCodes, false);
+        };
+        _ref.setKeys = function(active){
             console.log("HbbTV::Setting KeySet");
             _ref.oipfcfg = document.getElementById('oipfcfg');
-            var keys = 0x33F;
+            var keys = active ? 0x33F : 0x1f;
             // for HbbTV 1.0:
             try {
                 _ref.hbbtvApp.privateData.keyset.setValue(keys);
@@ -32,13 +42,22 @@ if (!window.HbbTV.Main) {
                     }
                 }
             }
-            _ref.userAgent = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion + ", " + navigator.userAgent) : "";
-            _ref.userAgentLog = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion) : ""
-            console.log('HbbTV::UA:' + _ref.userAgentLog);
-			// key listener
-            //console.log("HbbTV::Register Global KeyHandler");
-            if(keyCallback)HbbTV.KeyHandler.keyCallBack = keyCallback;
-            document.addEventListener("keydown", HbbTV.KeyHandler.handleKeyCodes, false);
+        };
+        _ref.initVideo = function(){
+            var vid = document.getElementById("video");
+            try {
+                vid.setFullScreen(true);
+            } catch (e) {}
+            try {
+                vid.bindToCurrentChannel();
+            } catch (e) {}
+            try {
+                vid.onChannelChangeSucceeded = _ref.channelChanged(vid);
+            } catch (e) {}
+        };
+        _ref.channelChanged = function(vid){
+            console.log("HbbTV::Channel changed");
+            _ref.destroy();
         };
         _ref.destroy = function(){
             try {
@@ -89,11 +108,13 @@ if (!window.HbbTV.Main) {
                     rb.style.display = "none";
                 }, 5000);
                 _ref.isActive = false;
+                _ref.setKeys(false);
             }else{
                 clearTimeout(this.timer);
                 _ref.isActive = true;
                 app.style.display = "block";
                 rb.style.display = "none";
+                _ref.setKeys(true);
             }
         }
         _ref.benchmark = function(){
@@ -133,7 +154,7 @@ if (!window.HbbTV.Main) {
                 }
             }, 40);
         }
-        _ref.loadApp = function(app_id,params,url){
+        _ref.loadApp = function(app_id,params,url,callback){
             console.log("HbbTV::Changing app to: " + app_id + " with params: " + params + "alternative URL: " + url);
             try {
                 if (self.appDelay) {
@@ -142,27 +163,61 @@ if (!window.HbbTV.Main) {
                 var userAgent = _ref.userAgent.toUpperCase();
                 if (userAgent.indexOf("SONY") > 0) {
                     self.appDelay = setTimeout(function() {
-                        self.loadApp(app_id,params,url);
+                        self.loadApp(app_id,params,url,callback);
                     }, 1000);
                     return;
                 }
             } catch (ignore) {}
-            self.loadApp(app_id,params,url);
+            self.loadApp(app_id,params,url,callback);
         };
-        this.loadApp = function (app_id,params,url) {
+        _ref.loadingEvents = ["DVB_OK", "DVB_FAILED", "URL_OK", "URL_FAILED"];
+        this.loadApp = function (app_id,params,url,callback) {
+            callback = callback || function(e){};
             var dvbURL = "dvb://current.ait/" + app_id + (params ? "?" + params : "");
             try {
                 if (_ref.hbbtvApp.createApplication(dvbURL, false)) {
+                    callback(_ref.loadingEvents[0]);
                     _ref.hbbtvApp.destroyApplication();
                     return;
                 }
             } catch (e) {
-                printError(e);
+                //printError(e);
             }
+            callback(_ref.loadingEvents[1]);
             if (params) {
                 url += (url.indexOf("?") > 0 ? "&" : "?") + params;
             }
-            document.location.href = url;
+            var data = '{"url":"' + url + '"}';
+            var xmlhttp;
+            try{
+                xmlhttp = new XMLHttpRequest();
+            }catch (e){
+                try{
+                    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+                }catch (e) {
+                    try{
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }catch (e){
+
+                    }
+                }
+            }
+            xmlhttp.open("POST", HbbTV.Config.pingURL);
+            xmlhttp.onreadystatechange = function () {
+                if(xmlhttp.readyState == 4) {
+                    if (xmlhttp.status == 200) {
+                        if(xmlhttp.responseText == "true"){
+                            callback(_ref.loadingEvents[3]);
+                            document.location.href = url;
+                        }else{
+                            callback(_ref.loadingEvents[4]);
+                        }
+                    }else{
+                        document.location.href = url;
+                    }
+                }
+            };
+            xmlhttp.send(data)
         }
 		return _ref;
     }());

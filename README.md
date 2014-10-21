@@ -12,7 +12,7 @@ Features:
 
 Version
 ----
-
+0.1.1 - October 21st 2014
 0.1.0 - July 10th 2014
 
 Tech
@@ -27,7 +27,6 @@ Installation
 --------------
 
 ```sh
-npm install
 grunt
 ```
 

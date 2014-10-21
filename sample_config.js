@@ -11,15 +11,23 @@
          */
         logURL : "api/v1/portal/logger.json",
         /*
+         *  ping URL
+         *
+         * requires POST
+         * @param string $url {@type string} url to test
+         * @return boolean true/false as result
+         */
+        pingURL : "api/v1/portal/ping.json",
+        /*
          *  Identical TAG. Use PIN, User ID,...
          *
          */
         id : 0,
         /*
-         *  Set this to true, if you want to log to Service
+         *  Set this to true, if you only want to log to Service
          *
          */
-        logToService : true,
+        logToServiceOnly : true,
         /*
          * override animation settings to false if needed, otherwise true will use benchmarks
          */
