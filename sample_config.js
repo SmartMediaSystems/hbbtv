@@ -9,7 +9,7 @@
          * @param int $ident {@type string} PIN or id to identify
          * @param string $level {@type string} loglevel (DEBUG,INFO,ERROR,WARN)
          */
-        logURL : "api/v1/portal/logger.json",
+        logURL : "api/v1/portal/log",
         /*
          *  ping URL
          *
@@ -24,10 +24,13 @@
          */
         id : 0,
         /*
-         *  Set this to true, if you only want to log to Service
-         *
+         *  Mode of logging
+         *  possible Values:
+         *  0: log to browserconsole only (if possible)
+         *  1: log to service only (logURL above is used)
+         *  2: log to browserconsole AND service
          */
-        logToServiceOnly : true,
+        loggingMode : 0,
         /*
          * override animation settings to false if needed, otherwise true will use benchmarks
          */

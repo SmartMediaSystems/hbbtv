@@ -101,9 +101,19 @@ if (!window.HbbTV.Main) {
                 //console.log(e);
             }
             //init keys
+            _ref.setKeys(true);
+            _ref.userAgent = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion + ", " + navigator.userAgent) : "";
+            _ref.userAgentLog = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion) : ""
+            console.log('HbbTV::UA:' + _ref.userAgentLog);
+			// key listener
+            //console.log("HbbTV::Register Global KeyHandler");
+            if(keyCallback)HbbTV.KeyHandler.keyCallBack = keyCallback;
+            document.addEventListener("keydown", HbbTV.KeyHandler.handleKeyCodes, false);
+        };
+        _ref.setKeys = function(active){
             console.log("HbbTV::Setting KeySet");
             _ref.oipfcfg = document.getElementById('oipfcfg');
-            var keys = 0x33F;
+            var keys = active ? 0x33F : 0x1f;
             // for HbbTV 1.0:
             try {
                 _ref.hbbtvApp.privateData.keyset.setValue(keys);
@@ -119,13 +129,22 @@ if (!window.HbbTV.Main) {
                     }
                 }
             }
-            _ref.userAgent = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion + ", " + navigator.userAgent) : "";
-            _ref.userAgentLog = (navigator && navigator.appName) ? (navigator.appName + ", " +  navigator.appVersion) : ""
-            console.log('HbbTV::UA:' + _ref.userAgentLog);
-			// key listener
-            //console.log("HbbTV::Register Global KeyHandler");
-            if(keyCallback)HbbTV.KeyHandler.keyCallBack = keyCallback;
-            document.addEventListener("keydown", HbbTV.KeyHandler.handleKeyCodes, false);
+        };
+        _ref.initVideo = function(){
+            var vid = document.getElementById("video");
+            try {
+                vid.setFullScreen(true);
+            } catch (e) {}
+            try {
+                vid.bindToCurrentChannel();
+            } catch (e) {}
+            try {
+                vid.onChannelChangeSucceeded = _ref.channelChanged(vid);
+            } catch (e) {}
+        };
+        _ref.channelChanged = function(vid){
+            console.log("HbbTV::Channel changed");
+            _ref.destroy();
         };
         _ref.destroy = function(){
             try {
@@ -176,11 +195,13 @@ if (!window.HbbTV.Main) {
                     rb.style.display = "none";
                 }, 5000);
                 _ref.isActive = false;
+                _ref.setKeys(false);
             }else{
                 clearTimeout(this.timer);
                 _ref.isActive = true;
                 app.style.display = "block";
                 rb.style.display = "none";
+                _ref.setKeys(true);
             }
         }
         _ref.benchmark = function(){
@@ -220,7 +241,7 @@ if (!window.HbbTV.Main) {
                 }
             }, 40);
         }
-        _ref.loadApp = function(app_id,params,url){
+        _ref.loadApp = function(app_id,params,url,callback){
             console.log("HbbTV::Changing app to: " + app_id + " with params: " + params + "alternative URL: " + url);
             try {
                 if (self.appDelay) {
@@ -229,27 +250,61 @@ if (!window.HbbTV.Main) {
                 var userAgent = _ref.userAgent.toUpperCase();
                 if (userAgent.indexOf("SONY") > 0) {
                     self.appDelay = setTimeout(function() {
-                        self.loadApp(app_id,params,url);
+                        self.loadApp(app_id,params,url,callback);
                     }, 1000);
                     return;
                 }
             } catch (ignore) {}
-            self.loadApp(app_id,params,url);
+            self.loadApp(app_id,params,url,callback);
         };
-        this.loadApp = function (app_id,params,url) {
+        _ref.loadingEvents = ["DVB_OK", "DVB_FAILED", "URL_OK", "URL_FAILED"];
+        this.loadApp = function (app_id,params,url,callback) {
+            callback = callback || function(e){};
             var dvbURL = "dvb://current.ait/" + app_id + (params ? "?" + params : "");
             try {
                 if (_ref.hbbtvApp.createApplication(dvbURL, false)) {
+                    callback(_ref.loadingEvents[0]);
                     _ref.hbbtvApp.destroyApplication();
                     return;
                 }
             } catch (e) {
-                printError(e);
+                //printError(e);
             }
+            callback(_ref.loadingEvents[1]);
             if (params) {
                 url += (url.indexOf("?") > 0 ? "&" : "?") + params;
             }
-            document.location.href = url;
+            var data = '{"url":"' + url + '"}';
+            var xmlhttp;
+            try{
+                xmlhttp = new XMLHttpRequest();
+            }catch (e){
+                try{
+                    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+                }catch (e) {
+                    try{
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }catch (e){
+
+                    }
+                }
+            }
+            xmlhttp.open("POST", HbbTV.Config.pingURL);
+            xmlhttp.onreadystatechange = function () {
+                if(xmlhttp.readyState == 4) {
+                    if (xmlhttp.status == 200) {
+                        if(xmlhttp.responseText == "true"){
+                            callback(_ref.loadingEvents[3]);
+                            document.location.href = url;
+                        }else{
+                            callback(_ref.loadingEvents[4]);
+                        }
+                    }else{
+                        document.location.href = url;
+                    }
+                }
+            };
+            xmlhttp.send(data)
         }
 		return _ref;
     }());
@@ -336,84 +391,108 @@ if (!window.HbbTV.KeyHandler) {
         return _handler;
     }());
 }
-(function() {
-    var method;
-    var customLogger = {
-        error : function(msg){
-            sendLog(msg,"ERROR");
-        },
-        debug : function(msg){
-            sendLog(msg,"DEBUG");
-        },
-        log : function(msg){
-            sendLog(msg,"DEBUG");
-        },
-        info : function(msg){
-            sendLog(msg,"INFO");
-        },
-        warn : function(msg){
-            sendLog(msg,"WARN");
-        }
-    };
-    var emptyLogger = {
-        error : function(msg){
-        },
-        debug : function(msg){
-        },
-        log : function(msg){
-        },
-        info : function(msg){
-        },
-        warn : function(msg){
-        }
-    };
-    var methods = [
-        'assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error',
-        'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log',
-        'markTimeline', 'profile', 'profileEnd', 'table', 'time', 'timeEnd',
-        'timeStamp', 'trace', 'warn'
-    ];
-    var length = methods.length;
-    var console = (window.console = window.console || emptyLogger);
-    if(HbbTV.Config.logToService)window.console =  customLogger;
+    (function() {
+        var method;
+        var customLogger = {
+            error: function(msg) {
+                sendLog(msg, "ERROR");
+            },
+            debug: function(msg) {
+                sendLog(msg, "DEBUG");
+            },
+            log: function(msg) {
+                sendLog(msg, "DEBUG");
+            },
+            info: function(msg) {
+                sendLog(msg, "INFO");
+            },
+            warn: function(msg) {
+                sendLog(msg, "WARN");
+            },
+            trace: function(msg) {
+                sendLog(msg, "TRACE");
+            }
+        };
+        if (HbbTV.Config.loggingMode == 0) {
 
-    while (length--) {
-        method = methods[length];
+        } else if (HbbTV.Config.loggingMode == 1) {
+            window.console = customLogger;
+        } else if (HbbTV.Config.loggingMode == 2 && window.console) {
+            if (typeof window.console.log.apply == "function") {
+                var exerr = console.error;
+                console.error = function(msg) {
+                    exerr.apply(this, arguments);
+                    customLogger.error(msg);
+                }
+                var exdebug = console.debug;
+                console.debug = function(msg) {
+                    exdebug.apply(this, arguments);
+                    customLogger.debug(msg);
+                }
+                var exlog = console.log;
+                console.log = function(msg) {
+                    exlog.apply(this, arguments);
+                    customLogger.log(msg);
+                }
+                var exinf = console.info;
+                console.info = function(msg) {
+                    customLogger.info(msg);
+                    exinf.apply(this, arguments);
 
-        // Only stub undefined methods.
-        if (!console[method]) {
-            console[method] = customLogger.debug;
+                }
+                var exwarn = console.warn;
+                window.console.warn = function(msg) {
+                    customLogger.warn(msg);
+                    exwarn.apply(this, arguments);
+                }
+            }
         }
-    }
 
-    var sendLog = function(msg, level){
+        var console = (window.console = window.console || customLogger);
+        var methods = [
+            'assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error',
+            'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log',
+            'markTimeline', 'profile', 'profileEnd', 'table', 'time', 'timeEnd',
+            'timeStamp', 'trace', 'warn'
+        ];
+        var length = methods.length;
+        while (length--) {
+            method = methods[length];
+
+            // Only stub undefined methods.
+            if (!console[method]) {
+                console[method] = customLogger.debug;
+            }
+        }
+
+    var sendLog = function(msg, level) {
         var data = '{"msg":"' + msg + '","level":"' + level + '","ident":"' + HbbTV.Config.id + '"}';
         var xmlhttp;
-        try{
+        try {
             // Opera 8.0+, Firefox, Safari
             xmlhttp = new XMLHttpRequest();
-        }catch (e){
+        } catch (e) {
             // Internet Explorer Browsers
-            try{
+            try {
                 xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
-            }catch (e) {
-                try{
+            } catch (e) {
+                try {
                     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }catch (e){
+                } catch (e) {
                     // Something went wrong
                     alert("Your browser broke!");
                     return false;
                 }
             }
         }
-        xmlhttp.open("POST", HbbTV.Config.logURL , true);
+        xmlhttp.open("POST", HbbTV.Config.logURL, true);
         xmlhttp.onreadystatechange = display_data;
         xmlhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");
 
         xmlhttp.send(data);
 
         function display_data() {
-            if(xmlhttp.readyState == 4) {
+            if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 404) {
                     alert("ERROR::Logger not found!");
                 }

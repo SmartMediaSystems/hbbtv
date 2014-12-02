@@ -52,4 +52,4 @@ Don't hesitate to contact [Smart Media Systems] for professional HbbTV and Smart
 
 [HbbTV]:http://hbbtv.org
 [Smart Media Systems]:http://smartmedia-systems.de
-[specification]:http://hbbtv.org/pages/about_hbbtv/TS102796-v121-errata-1.pdf
+[specification]:http://goo.gl/hVQChE
