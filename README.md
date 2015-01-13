@@ -7,6 +7,7 @@ Features:
   - Control, init and use App-Manager
   - Benchmark the performance of the STB or TV to enable or disable animations
   - Log console to services
+  - Handle CSS transform support (description in README_transform_test.md)
 
 
 

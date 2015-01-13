@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//HbbTV//1.1.1//EN" "http://www.hbbtv.org/dtd/HbbTV-1.1.1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>HbbTV CSS Transform Test Example</title>
+        <meta http-equiv="Content-Type" content="application/vnd.hbbtv.xml+xhtml; utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+            <!-- Start HbbTV Library -->
+            <script src='js/config.js'></script>
+            <script src="js/libs/hbbtv_lib.js"></script>
+            
+            <link type="text/css" rel="stylesheet" media="screen" href="css/hbbtv.css">
+            </link>
+    </head>
+    <body>
+        <div id="hbbtv_app">
+            <div style="visibility: hidden; display: none;" id="app_container">
+                <object type="application/oipfApplicationManager" id="applicationManager" style="position:absolute; left:0px; top:0px; width:0px; height:0px;"></object>
+                <object type="application/oipfConfiguration" id="configuration" style="position:absolute; left:0px; top:0px; width:0px; height:0px;"></object>
+                <object id="video" type="video/broadcast" width="1280" height="720" style="position: absolute; left: 0px; top: 0px; width: 1280px; height: 720px; outline: transparent; -ant-user-input: disabled; -ant-highlight-colour: transparent;"></object>
+            </div>
+            
+            <div id="transform_example"></div>
+
+            <div class="main">
+                <div class="safe_area" id="content"></div>
+            </div>
+        </div>
+        <div id="hbbtv_rb" style="display: none">
+            <div class="shadebghidden" style="left:0px;top:228px;width:490px;"></div>
+            <div class="colbutton1" style="left: 30px; top: 32px;"></div>
+            <div class="colbuttontxtsm" style="left: 68px; top: 32px; width: 215px;">
+                HbbTV-Example
+            </div>
+        </div>
+        <script src='js/app.js'></script>
+    </body>
+</html>
